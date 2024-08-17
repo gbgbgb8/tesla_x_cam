@@ -1,6 +1,7 @@
 let videoFiles = [];
 let videos = [];
 let videoToggles = [];
+let primaryVideoRadios = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     videos = [
@@ -18,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('toggle-right')
     ];
 
+    primaryVideoRadios = document.querySelectorAll('input[name="primary-video"]');
+
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', exportVideo);
 
@@ -29,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listeners for video toggles
     videoToggles.forEach((toggle, index) => {
         toggle.addEventListener('change', () => toggleVideoVisibility(index + 1));
+    });
+
+    // Add event listeners for primary video selection
+    primaryVideoRadios.forEach(radio => {
+        radio.addEventListener('change', handlePrimaryVideoChange);
     });
 });
 
@@ -57,11 +65,13 @@ function getTimestampFromFilename(filename) {
 function updateVideoSources() {
     if (videoFiles.length >= 4) {
         const latestSet = videoFiles.slice(-4);
-        videos[0].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
         videos[1].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
         videos[2].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-back')));
         videos[3].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-left')));
         videos[4].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-right')));
+        
+        // Set initial main video to front camera
+        videos[0].src = videos[1].src;
     }
 }
 
@@ -105,6 +115,28 @@ function toggleVideoVisibility(index) {
     const isVisible = videoToggles[index - 1].checked;
     video.style.opacity = isVisible ? '1' : '0';
     video.style.pointerEvents = isVisible ? 'auto' : 'none';
+}
+
+function handlePrimaryVideoChange(event) {
+    const selectedValue = event.target.value;
+    const selectedIndex = ['front', 'back', 'left', 'right'].indexOf(selectedValue) + 1;
+    
+    // Swap sources between main video and selected corner video
+    const tempSrc = videos[0].src;
+    videos[0].src = videos[selectedIndex].src;
+    videos[selectedIndex].src = tempSrc;
+
+    // Pause all videos and reset their current time
+    const currentTime = videos[0].currentTime;
+    videos.forEach(video => {
+        video.pause();
+        video.currentTime = currentTime;
+    });
+
+    // Play the main video if it was playing before
+    if (!videos[0].paused) {
+        videos[0].play();
+    }
 }
 
 function exportVideo() {
