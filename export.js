@@ -1,9 +1,6 @@
 // Load FFmpeg
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ 
-    log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
-});
+const ffmpeg = createFFmpeg({ log: true });
 
 let ffmpegLoaded = false;
 
