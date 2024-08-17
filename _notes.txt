@@ -1,0 +1,7 @@
+To complete the project, you'll need to implement the following:
+
+Improve the video layout manager to allow users to select which video is in full view.
+Implement the time range selector functionality to jump to specific dates and times.
+Develop the video export functionality using ffmpeg.wasm to combine multiple video sets into a single video.
+Add audio file support and microphone recording for narration.
+Implement error handling and user feedback.

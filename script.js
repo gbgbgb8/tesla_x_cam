@@ -1,7 +1,23 @@
 let videoFiles = [];
+let videos = [];
 
-document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
-document.getElementById('export-btn').addEventListener('click', exportVideo);
+document.addEventListener('DOMContentLoaded', () => {
+    videos = [
+        document.getElementById('main-video'),
+        document.getElementById('front-video'),
+        document.getElementById('back-video'),
+        document.getElementById('left-video'),
+        document.getElementById('right-video')
+    ];
+
+    document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
+    document.getElementById('export-btn').addEventListener('click', exportVideo);
+
+    // Add event listeners for video synchronization
+    videos[0].addEventListener('play', syncPlay);
+    videos[0].addEventListener('pause', syncPause);
+    videos[0].addEventListener('seeked', syncSeek);
+});
 
 function handleFolderSelect(event) {
     const files = event.target.files;
@@ -26,19 +42,13 @@ function getTimestampFromFilename(filename) {
 }
 
 function updateVideoSources() {
-    const mainVideo = document.getElementById('main-video');
-    const frontVideo = document.getElementById('front-video');
-    const backVideo = document.getElementById('back-video');
-    const leftVideo = document.getElementById('left-video');
-    const rightVideo = document.getElementById('right-video');
-
     if (videoFiles.length >= 4) {
         const latestSet = videoFiles.slice(-4);
-        mainVideo.src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
-        frontVideo.src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
-        backVideo.src = URL.createObjectURL(latestSet.find(f => f.name.includes('-back')));
-        leftVideo.src = URL.createObjectURL(latestSet.find(f => f.name.includes('-left')));
-        rightVideo.src = URL.createObjectURL(latestSet.find(f => f.name.includes('-right')));
+        videos[0].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
+        videos[1].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
+        videos[2].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-back')));
+        videos[3].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-left')));
+        videos[4].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-right')));
     }
 }
 
@@ -50,6 +60,31 @@ function updateTimeRange() {
         document.getElementById('start-time').value = new Date(startTime).toISOString().slice(0, 16);
         document.getElementById('end-time').value = new Date(endTime).toISOString().slice(0, 16);
     }
+}
+
+function syncPlay() {
+    videos.forEach(video => {
+        if (video !== videos[0]) {
+            video.play();
+        }
+    });
+}
+
+function syncPause() {
+    videos.forEach(video => {
+        if (video !== videos[0]) {
+            video.pause();
+        }
+    });
+}
+
+function syncSeek() {
+    const time = videos[0].currentTime;
+    videos.forEach(video => {
+        if (video !== videos[0]) {
+            video.currentTime = time;
+        }
+    });
 }
 
 function exportVideo() {
