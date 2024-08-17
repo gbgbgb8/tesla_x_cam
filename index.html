@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tesla X Cam Viewer</title>
     <link rel="stylesheet" href="style.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval'; worker-src blob:;">
 </head>
 <body>
     <header>
@@ -93,8 +94,7 @@
             </div>
         </main>
         <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-        <script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
-        <script src="script.js" type="module"></script>
-        <script src="export.js" type="module"></script>
+        <script src="script.js"></script>
+        <script src="export.js"></script>
     </body>
     </html>
