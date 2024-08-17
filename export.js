@@ -1,5 +1,6 @@
-// Load FFmpeg
+// Import FFmpeg
 const { createFFmpeg, fetchFile } = FFmpeg;
+
 const ffmpeg = createFFmpeg({ 
     log: true,
     corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
@@ -56,7 +57,7 @@ async function exportVideo(format) {
                 filterComplex = createLayoutFilter(visibleVideos.length, 720, 720);
                 break;
             case 'original':
-                outputDimensions = '1280x960'; // Assuming original Tesla cam resolution
+                outputDimensions = '1280x960';
                 filterComplex = createLayoutFilter(visibleVideos.length, 1280, 960);
                 break;
             default:
