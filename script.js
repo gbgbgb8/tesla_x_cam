@@ -2,26 +2,29 @@ let videoFiles = [];
 let videos = {};
 let videoPositions = {
     front: 'main',
-    back: 'back',
-    left: 'left',
-    right: 'right'
+    back: 'bottom-right',
+    left: 'top-left',
+    right: 'top-right'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     videos = {
         main: document.getElementById('main-video'),
-        left: document.getElementById('left-video'),
-        right: document.getElementById('right-video'),
-        back: document.getElementById('back-video')
+        'top-left': document.getElementById('top-left-video'),
+        'top-right': document.getElementById('top-right-video'),
+        'bottom-left': document.getElementById('bottom-left-video'),
+        'bottom-right': document.getElementById('bottom-right-video')
     };
 
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', exportVideo);
 
     // Add event listeners for video synchronization
-    videos.main.addEventListener('play', syncPlay);
-    videos.main.addEventListener('pause', syncPause);
-    videos.main.addEventListener('seeked', syncSeek);
+    Object.values(videos).forEach(video => {
+        video.addEventListener('play', () => syncVideos('play'));
+        video.addEventListener('pause', () => syncVideos('pause'));
+        video.addEventListener('seeked', () => syncVideos('seek'));
+    });
 
     // Add event listeners for video toggles
     document.querySelectorAll('.position-select').forEach(select => {
@@ -36,7 +39,6 @@ function handleFolderSelect(event) {
     const files = event.target.files;
     videoFiles = Array.from(files).filter(file => file.name.endsWith('.mp4'));
     
-    // Sort files by timestamp
     videoFiles.sort((a, b) => {
         const timestampA = getTimestampFromFilename(a.name);
         const timestampB = getTimestampFromFilename(b.name);
@@ -64,9 +66,10 @@ function updateVideoSources() {
             right: URL.createObjectURL(latestSet.find(f => f.name.includes('-right_repeater')))
         };
 
-        Object.keys(videoPositions).forEach(position => {
-            if (videoPositions[position] !== 'disabled') {
-                videos[videoPositions[position]].src = sources[position];
+        Object.keys(videoPositions).forEach(videoType => {
+            const position = videoPositions[videoType];
+            if (position !== 'hidden') {
+                videos[position].src = sources[videoType];
             }
         });
     }
@@ -82,27 +85,13 @@ function updateTimeRange() {
     }
 }
 
-function syncPlay() {
+function syncVideos(action) {
+    const mainVideo = videos.main;
     Object.values(videos).forEach(video => {
-        if (video !== videos.main && !video.paused) {
-            video.play();
-        }
-    });
-}
-
-function syncPause() {
-    Object.values(videos).forEach(video => {
-        if (video !== videos.main) {
-            video.pause();
-        }
-    });
-}
-
-function syncSeek() {
-    const time = videos.main.currentTime;
-    Object.values(videos).forEach(video => {
-        if (video !== videos.main) {
-            video.currentTime = time;
+        if (video !== mainVideo) {
+            if (action === 'play') video.play();
+            else if (action === 'pause') video.pause();
+            else if (action === 'seek') video.currentTime = mainVideo.currentTime;
         }
     });
 }
@@ -113,11 +102,11 @@ function handlePositionChange(event) {
     const newPosition = select.value;
     const oldPosition = videoPositions[videoType];
 
-    // If there's a video in the new position, disable it
+    // If there's a video in the new position, swap positions
     Object.keys(videoPositions).forEach(key => {
         if (videoPositions[key] === newPosition) {
-            videoPositions[key] = 'disabled';
-            document.querySelector(`.video-toggle[data-video="${key}"] .position-select`).value = 'disabled';
+            videoPositions[key] = oldPosition;
+            document.querySelector(`.video-toggle[data-video="${key}"] .position-select`).value = oldPosition;
         }
     });
 
@@ -126,33 +115,19 @@ function handlePositionChange(event) {
 }
 
 function updateVideoLayout() {
-    Object.keys(videos).forEach(position => {
-        videos[position].style.display = 'none';
-    });
+    Object.values(videos).forEach(video => video.style.display = 'none');
 
     Object.keys(videoPositions).forEach(videoType => {
         const position = videoPositions[videoType];
-        if (position !== 'disabled') {
+        if (position !== 'hidden') {
             videos[position].style.display = 'block';
-            videos[position].src = getVideoSource(videoType);
         }
     });
 
     updateVideoSources();
 }
 
-function getVideoSource(videoType) {
-    if (videoFiles.length >= 4) {
-        const latestSet = videoFiles.slice(-4);
-        const file = latestSet.find(f => f.name.includes(`-${videoType}`));
-        return file ? URL.createObjectURL(file) : '';
-    }
-    return '';
-}
-
 function exportVideo() {
-    // This function will handle video export using ffmpeg.wasm
-    // It's a complex operation that requires more detailed implementation
     console.log('Export functionality not yet implemented');
     alert('Export functionality is not yet implemented. This would combine the visible videos into a single file.');
 }
