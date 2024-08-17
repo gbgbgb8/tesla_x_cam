@@ -13,10 +13,14 @@
     <main>
         <div id="video-container">
             <video id="main-video" controls></video>
-            <video id="front-video" class="corner-video"></video>
-            <video id="back-video" class="corner-video"></video>
-            <video id="left-video" class="corner-video"></video>
-            <video id="right-video" class="corner-video"></video>
+            <video id="top-center-video" class="overlay-video"></video>
+            <video id="bottom-center-video" class="overlay-video"></video>
+            <video id="left-center-video" class="overlay-video"></video>
+            <video id="right-center-video" class="overlay-video"></video>
+            <video id="top-left-video" class="corner-video"></video>
+            <video id="top-right-video" class="corner-video"></video>
+            <video id="bottom-left-video" class="corner-video"></video>
+            <video id="bottom-right-video" class="corner-video"></video>
         </div>
         <div id="controls">
             <div class="control-group">
@@ -32,12 +36,67 @@
             </div>
             <div class="control-group">
                 <label>Video Toggles:</label>
-                <div id="video-grid">
-                    <div class="grid-cell" data-position="0"></div>
-                    <div class="grid-cell" data-position="1"></div>
-                    <div class="grid-cell" data-position="2"></div>
-                    <div class="grid-cell" data-position="3"></div>
-                    <div class="grid-cell" data-position="4"></div>
+                <div id="video-toggles">
+                    <div class="video-toggle" data-video="front">
+                        <span>Front</span>
+                        <select class="position-select">
+                            <option value="disabled">Disabled</option>
+                            <option value="main">Main</option>
+                            <option value="top-center">Top Center</option>
+                            <option value="bottom-center">Bottom Center</option>
+                            <option value="left-center">Left Center</option>
+                            <option value="right-center">Right Center</option>
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="bottom-right">Bottom Right</option>
+                        </select>
+                    </div>
+                    <div class="video-toggle" data-video="back">
+                        <span>Back</span>
+                        <select class="position-select">
+                            <option value="disabled">Disabled</option>
+                            <option value="main">Main</option>
+                            <option value="top-center">Top Center</option>
+                            <option value="bottom-center">Bottom Center</option>
+                            <option value="left-center">Left Center</option>
+                            <option value="right-center">Right Center</option>
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="bottom-right">Bottom Right</option>
+                        </select>
+                    </div>
+                    <div class="video-toggle" data-video="left">
+                        <span>Left</span>
+                        <select class="position-select">
+                            <option value="disabled">Disabled</option>
+                            <option value="main">Main</option>
+                            <option value="top-center">Top Center</option>
+                            <option value="bottom-center">Bottom Center</option>
+                            <option value="left-center">Left Center</option>
+                            <option value="right-center">Right Center</option>
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="bottom-right">Bottom Right</option>
+                        </select>
+                    </div>
+                    <div class="video-toggle" data-video="right">
+                        <span>Right</span>
+                        <select class="position-select">
+                            <option value="disabled">Disabled</option>
+                            <option value="main">Main</option>
+                            <option value="top-center">Top Center</option>
+                            <option value="bottom-center">Bottom Center</option>
+                            <option value="left-center">Left Center</option>
+                            <option value="right-center">Right Center</option>
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="bottom-right">Bottom Right</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="control-group">

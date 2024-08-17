@@ -1,34 +1,40 @@
 let videoFiles = [];
-let videos = [];
-let gridCells = [];
-let videoPositions = ['front', 'left', '', 'right', 'back'];
+let videos = {};
+let videoPositions = {
+    front: 'disabled',
+    back: 'disabled',
+    left: 'disabled',
+    right: 'disabled'
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    videos = [
-        document.getElementById('main-video'),
-        document.getElementById('front-video'),
-        document.getElementById('back-video'),
-        document.getElementById('left-video'),
-        document.getElementById('right-video')
-    ];
-
-    gridCells = document.querySelectorAll('.grid-cell');
+    videos = {
+        main: document.getElementById('main-video'),
+        'top-center': document.getElementById('top-center-video'),
+        'bottom-center': document.getElementById('bottom-center-video'),
+        'left-center': document.getElementById('left-center-video'),
+        'right-center': document.getElementById('right-center-video'),
+        'top-left': document.getElementById('top-left-video'),
+        'top-right': document.getElementById('top-right-video'),
+        'bottom-left': document.getElementById('bottom-left-video'),
+        'bottom-right': document.getElementById('bottom-right-video')
+    };
 
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', exportVideo);
 
     // Add event listeners for video synchronization
-    videos[0].addEventListener('play', syncPlay);
-    videos[0].addEventListener('pause', syncPause);
-    videos[0].addEventListener('seeked', syncSeek);
+    videos.main.addEventListener('play', syncPlay);
+    videos.main.addEventListener('pause', syncPause);
+    videos.main.addEventListener('seeked', syncSeek);
 
-    // Add event listeners for grid cells
-    gridCells.forEach((cell, index) => {
-        cell.addEventListener('click', () => toggleGridCell(index));
+    // Add event listeners for video toggles
+    document.querySelectorAll('.position-select').forEach(select => {
+        select.addEventListener('change', handlePositionChange);
     });
 
-    // Initialize grid
-    updateGrid();
+    // Initialize video positions
+    updateVideoLayout();
 });
 
 function handleFolderSelect(event) {
@@ -56,13 +62,23 @@ function getTimestampFromFilename(filename) {
 function updateVideoSources() {
     if (videoFiles.length >= 4) {
         const latestSet = videoFiles.slice(-4);
-        videos[1].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-front')));
-        videos[2].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-back')));
-        videos[3].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-left')));
-        videos[4].src = URL.createObjectURL(latestSet.find(f => f.name.includes('-right')));
-        
-        // Set initial main video to front camera
-        videos[0].src = videos[1].src;
+        const sources = {
+            front: URL.createObjectURL(latestSet.find(f => f.name.includes('-front'))),
+            back: URL.createObjectURL(latestSet.find(f => f.name.includes('-back'))),
+            left: URL.createObjectURL(latestSet.find(f => f.name.includes('-left'))),
+            right: URL.createObjectURL(latestSet.find(f => f.name.includes('-right')))
+        };
+
+        Object.keys(videoPositions).forEach(position => {
+            if (videoPositions[position] !== 'disabled') {
+                videos[videoPositions[position]].src = sources[position];
+            }
+        });
+
+        // Set initial main video if not set
+        if (!videos.main.src) {
+            videos.main.src = sources.front;
+        }
     }
 }
 
@@ -77,67 +93,65 @@ function updateTimeRange() {
 }
 
 function syncPlay() {
-    videos.forEach(video => {
-        if (video !== videos[0]) {
+    Object.values(videos).forEach(video => {
+        if (video !== videos.main && !video.paused) {
             video.play();
         }
     });
 }
 
 function syncPause() {
-    videos.forEach(video => {
-        if (video !== videos[0]) {
+    Object.values(videos).forEach(video => {
+        if (video !== videos.main) {
             video.pause();
         }
     });
 }
 
 function syncSeek() {
-    const time = videos[0].currentTime;
-    videos.forEach(video => {
-        if (video !== videos[0]) {
+    const time = videos.main.currentTime;
+    Object.values(videos).forEach(video => {
+        if (video !== videos.main) {
             video.currentTime = time;
         }
     });
 }
 
-function toggleGridCell(index) {
-    const position = videoPositions[index];
-    if (position) {
-        videoPositions[index] = '';
-        toggleVideoVisibility(position, false);
-    } else {
-        const availablePosition = ['front', 'back', 'left', 'right'].find(pos => !videoPositions.includes(pos));
-        if (availablePosition) {
-            videoPositions[index] = availablePosition;
-            toggleVideoVisibility(availablePosition, true);
+function handlePositionChange(event) {
+    const select = event.target;
+    const videoType = select.closest('.video-toggle').dataset.video;
+    const newPosition = select.value;
+    const oldPosition = videoPositions[videoType];
+
+    // If there's a video in the new position, disable it
+    Object.keys(videoPositions).forEach(key => {
+        if (videoPositions[key] === newPosition) {
+            videoPositions[key] = 'disabled';
+            document.querySelector(`.video-toggle[data-video="${key}"] .position-select`).value = 'disabled';
         }
-    }
-    updateGrid();
-    updateMainVideo();
-}
-
-function toggleVideoVisibility(position, isVisible) {
-    const videoIndex = ['front', 'back', 'left', 'right'].indexOf(position) + 1;
-    const video = videos[videoIndex];
-    video.style.opacity = isVisible ? '1' : '0';
-    video.style.pointerEvents = isVisible ? 'auto' : 'none';
-}
-
-function updateGrid() {
-    gridCells.forEach((cell, index) => {
-        const position = videoPositions[index];
-        cell.textContent = position ? position.charAt(0).toUpperCase() : '';
-        cell.classList.toggle('active', !!position);
     });
+
+    videoPositions[videoType] = newPosition;
+    updateVideoLayout();
 }
 
-function updateMainVideo() {
-    const centerPosition = videoPositions[4];
-    if (centerPosition) {
-        const videoIndex = ['front', 'back', 'left', 'right'].indexOf(centerPosition) + 1;
-        videos[0].src = videos[videoIndex].src;
-    }
+function updateVideoLayout() {
+    Object.keys(videoPositions).forEach(videoType => {
+        const position = videoPositions[videoType];
+        if (position !== 'disabled') {
+            videos[position].style.display = 'block';
+            videos[position].style.opacity = '1';
+        }
+    });
+
+    Object.keys(videos).forEach(position => {
+        if (position !== 'main' && !Object.values(videoPositions).includes(position)) {
+            videos[position].style.display = 'none';
+            videos[position].style.opacity = '0';
+        }
+    });
+
+    updateVideoSources();
 }
 
 function exportVideo() {
