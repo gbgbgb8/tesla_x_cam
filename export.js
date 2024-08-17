@@ -1,13 +1,22 @@
 // Load FFmpeg
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ 
+    log: true,
+    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
+});
 
 let ffmpegLoaded = false;
 
 async function loadFFmpeg() {
     if (!ffmpegLoaded) {
-        await ffmpeg.load();
-        ffmpegLoaded = true;
+        try {
+            await ffmpeg.load();
+            ffmpegLoaded = true;
+        } catch (error) {
+            console.error('Failed to load FFmpeg:', error);
+            alert('Failed to load video processing tools. Please check your internet connection and try again.');
+            throw error;
+        }
     }
 }
 
