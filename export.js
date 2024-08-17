@@ -1,13 +1,18 @@
 // Load FFmpeg
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ 
+    log: true,
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
+});
 
 let ffmpegLoaded = false;
 
 async function loadFFmpeg() {
     if (!ffmpegLoaded) {
         try {
+            console.log('Starting to load FFmpeg...');
             await ffmpeg.load();
+            console.log('FFmpeg loaded successfully');
             ffmpegLoaded = true;
         } catch (error) {
             console.error('Failed to load FFmpeg:', error);
@@ -27,8 +32,11 @@ async function exportVideo(format) {
             return;
         }
 
+        console.log('Starting video export process...');
+
         // Write visible video files to FFmpeg's virtual file system
         for (let i = 0; i < visibleVideos.length; i++) {
+            console.log(`Processing video ${i + 1} of ${visibleVideos.length}`);
             const videoBlob = await fetch(visibleVideos[i].src).then(r => r.blob());
             ffmpeg.FS('writeFile', `input${i}.mp4`, await fetchFile(videoBlob));
         }
@@ -55,14 +63,21 @@ async function exportVideo(format) {
                 throw new Error('Invalid format specified');
         }
 
+        console.log(`Exporting to ${format} format: ${outputDimensions}`);
+
         // Construct FFmpeg command
         const inputFiles = visibleVideos.map((_, i) => `-i input${i}.mp4`).join(' ');
-        await ffmpeg.run(
-            ...`${inputFiles} -filter_complex "${filterComplex}" -map "[outv]" -c:v libx264 -preset slow -crf 22 -profile:v high -pix_fmt yuv420p -r 30 -movflags +faststart -y output.mp4`.split(' ')
-        );
+        const ffmpegCommand = `${inputFiles} -filter_complex "${filterComplex}" -map "[outv]" -c:v libx264 -preset slow -crf 22 -profile:v high -pix_fmt yuv420p -r 30 -movflags +faststart -y output.mp4`;
+        console.log('FFmpeg command:', ffmpegCommand);
+
+        await ffmpeg.run(...ffmpegCommand.split(' '));
+
+        console.log('FFmpeg processing complete. Reading output file...');
 
         // Read the output file
         const data = ffmpeg.FS('readFile', 'output.mp4');
+
+        console.log('Creating download link...');
 
         // Create a download link
         const blob = new Blob([data.buffer], { type: 'video/mp4' });
@@ -72,10 +87,14 @@ async function exportVideo(format) {
         a.download = `tesla_cam_export_${format}.mp4`;
         a.click();
 
+        console.log('Download link created. Cleaning up...');
+
         // Clean up
         URL.revokeObjectURL(url);
         visibleVideos.forEach((_, i) => ffmpeg.FS('unlink', `input${i}.mp4`));
         ffmpeg.FS('unlink', 'output.mp4');
+
+        console.log('Export process complete');
 
     } catch (error) {
         console.error('Export failed:', error);
