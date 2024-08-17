@@ -1,27 +1,5 @@
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
-
-let ffmpegLoaded = false;
-
-async function loadFFmpeg() {
-    if (!ffmpegLoaded) {
-        try {
-            console.log('Starting to load FFmpeg...');
-            await ffmpeg.load();
-            console.log('FFmpeg loaded successfully');
-            ffmpegLoaded = true;
-        } catch (error) {
-            console.error('Failed to load FFmpeg:', error);
-            alert('Failed to load video processing tools. Please check your internet connection and try again.');
-            throw error;
-        }
-    }
-}
-
 async function exportVideo(format) {
     try {
-        await loadFFmpeg();
-
         const visibleVideos = getVisibleVideos();
         if (visibleVideos.length === 0) {
             alert('No visible videos to export.');
@@ -30,65 +8,67 @@ async function exportVideo(format) {
 
         console.log('Starting video export process...');
 
-        // Write visible video files to FFmpeg's virtual file system
-        for (let i = 0; i < visibleVideos.length; i++) {
-            console.log(`Processing video ${i + 1} of ${visibleVideos.length}`);
-            const videoBlob = await fetch(visibleVideos[i].src).then(r => r.blob());
-            ffmpeg.FS('writeFile', `input${i}.mp4`, await fetchFile(videoBlob));
-        }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
 
-        let outputDimensions, filterComplex;
+        let width, height;
         switch (format) {
             case 'landscape':
-                outputDimensions = '1280x720';
-                filterComplex = createLayoutFilter(visibleVideos.length, 1280, 720);
+                width = 1280; height = 720;
                 break;
             case 'portrait':
-                outputDimensions = '720x1280';
-                filterComplex = createLayoutFilter(visibleVideos.length, 720, 1280);
+                width = 720; height = 1280;
                 break;
             case 'square':
-                outputDimensions = '720x720';
-                filterComplex = createLayoutFilter(visibleVideos.length, 720, 720);
+                width = 720; height = 720;
                 break;
             case 'original':
-                outputDimensions = '1280x960';
-                filterComplex = createLayoutFilter(visibleVideos.length, 1280, 960);
+                width = 1280; height = 960;
                 break;
             default:
                 throw new Error('Invalid format specified');
         }
 
-        console.log(`Exporting to ${format} format: ${outputDimensions}`);
+        canvas.width = width;
+        canvas.height = height;
 
-        // Construct FFmpeg command
-        const inputFiles = visibleVideos.map((_, i) => `-i input${i}.mp4`).join(' ');
-        const ffmpegCommand = `${inputFiles} -filter_complex "${filterComplex}" -map "[outv]" -c:v libx264 -preset slow -crf 22 -profile:v high -pix_fmt yuv420p -r 30 -movflags +faststart -y output.mp4`;
-        console.log('FFmpeg command:', ffmpegCommand);
+        const stream = canvas.captureStream();
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
 
-        await ffmpeg.run(...ffmpegCommand.split(' '));
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tesla_cam_export_${format}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
 
-        console.log('FFmpeg processing complete. Reading output file...');
+        mediaRecorder.start();
 
-        // Read the output file
-        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const drawFrame = () => {
+            ctx.clearRect(0, 0, width, height);
+            const layout = calculateLayout(visibleVideos.length, width, height);
+            visibleVideos.forEach((video, index) => {
+                const { x, y, w, h } = layout[index];
+                ctx.drawImage(video, x, y, w, h);
+            });
+        };
 
-        console.log('Creating download link...');
+        const videoPromises = visibleVideos.map(video => new Promise((resolve) => {
+            video.onended = resolve;
+            video.play();
+        }));
 
-        // Create a download link
-        const blob = new Blob([data.buffer], { type: 'video/mp4' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `tesla_cam_export_${format}.mp4`;
-        a.click();
+        const drawInterval = setInterval(drawFrame, 1000 / 30); // 30 fps
 
-        console.log('Download link created. Cleaning up...');
+        await Promise.all(videoPromises);
 
-        // Clean up
-        URL.revokeObjectURL(url);
-        visibleVideos.forEach((_, i) => ffmpeg.FS('unlink', `input${i}.mp4`));
-        ffmpeg.FS('unlink', 'output.mp4');
+        clearInterval(drawInterval);
+        mediaRecorder.stop();
 
         console.log('Export process complete');
 
@@ -102,23 +82,29 @@ function getVisibleVideos() {
     return Object.values(videos).filter(video => video.style.display !== 'none');
 }
 
-function createLayoutFilter(videoCount, width, height) {
-    let layout;
+function calculateLayout(videoCount, width, height) {
     switch (videoCount) {
         case 1:
-            layout = '[0:v]scale=${width}:${height}[outv]';
-            break;
+            return [{ x: 0, y: 0, w: width, h: height }];
         case 2:
-            layout = '[0:v]scale=${width/2}:${height}[v0];[1:v]scale=${width/2}:${height}[v1];[v0][v1]hstack[outv]';
-            break;
+            return [
+                { x: 0, y: 0, w: width / 2, h: height },
+                { x: width / 2, y: 0, w: width / 2, h: height }
+            ];
         case 3:
-            layout = '[0:v]scale=${width}:${height/2}[v0];[1:v]scale=${width/2}:${height/2}[v1];[2:v]scale=${width/2}:${height/2}[v2];[v1][v2]hstack[bottom];[v0][bottom]vstack[outv]';
-            break;
+            return [
+                { x: 0, y: 0, w: width, h: height / 2 },
+                { x: 0, y: height / 2, w: width / 2, h: height / 2 },
+                { x: width / 2, y: height / 2, w: width / 2, h: height / 2 }
+            ];
         case 4:
-            layout = '[0:v]scale=${width/2}:${height/2}[v0];[1:v]scale=${width/2}:${height/2}[v1];[2:v]scale=${width/2}:${height/2}[v2];[3:v]scale=${width/2}:${height/2}[v3];[v0][v1]hstack[top];[v2][v3]hstack[bottom];[top][bottom]vstack[outv]';
-            break;
+            return [
+                { x: 0, y: 0, w: width / 2, h: height / 2 },
+                { x: width / 2, y: 0, w: width / 2, h: height / 2 },
+                { x: 0, y: height / 2, w: width / 2, h: height / 2 },
+                { x: width / 2, y: height / 2, w: width / 2, h: height / 2 }
+            ];
         default:
             throw new Error('Unsupported number of videos');
     }
-    return layout.replace(/\${width}/g, width).replace(/\${height}/g, height);
 }

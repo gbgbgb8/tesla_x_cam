@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tesla X Cam Viewer</title>
     <link rel="stylesheet" href="style.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval'; worker-src blob:;">
 </head>
 <body>
     <header>
         <h1>Tesla X Cam Viewer</h1>
     </header>
     <main>
-        <div id="viewer-container">
-            <div id="video-container">
-                <video id="main-video" controls></video>
-                <video id="top-left-video" class="overlay-video"></video>
-                <video id="top-right-video" class="overlay-video"></video>
-                <video id="bottom-left-video" class="overlay-video"></video>
-                <video id="bottom-right-video" class="overlay-video"></video>
-            </div>
+        <div id="video-container">
+            <video id="main-video" controls></video>
+            <video id="top-left-video" class="corner-video"></video>
+            <video id="top-right-video" class="corner-video"></video>
+            <video id="bottom-left-video" class="corner-video"></video>
+            <video id="bottom-right-video" class="corner-video"></video>
         </div>
         <div id="controls">
             <div class="control-group">
@@ -92,9 +89,9 @@
                 </select>
                 <button id="export-btn">Export</button>
             </div>
-        </main>
-        <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-        <script src="script.js"></script>
-        <script src="export.js"></script>
-    </body>
-    </html>
+        </div>
+    </main>
+    <script src="script.js"></script>
+    <script src="export.js"></script>
+</body>
+</html>
