@@ -82,11 +82,18 @@
                 </div>
             </div>
             <div class="control-group">
+                <label for="export-format">Export Format:</label>
+                <select id="export-format">
+                    <option value="landscape">Landscape (1280x720)</option>
+                    <option value="portrait">Portrait (720x1280)</option>
+                    <option value="square">Square (720x720)</option>
+                    <option value="original">Original (1280x960)</option>
+                </select>
                 <button id="export-btn">Export</button>
             </div>
-        </div>
-    </main>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/0.11.6/ffmpeg.min.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+        </main>
+        <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+        <script src="script.js"></script>
+        <script src="export.js"></script>
+    </body>
+    </html>

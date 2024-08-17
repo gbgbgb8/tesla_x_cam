@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
-    document.getElementById('export-btn').addEventListener('click', exportVideo);
+    document.getElementById('export-btn').addEventListener('click', () => {
+        const format = document.getElementById('export-format').value;
+        exportVideo(format);
+    });
 
     // Add event listeners for video synchronization
     Object.values(videos).forEach(video => {
@@ -127,7 +130,7 @@ function updateVideoLayout() {
     updateVideoSources();
 }
 
-function exportVideo() {
-    console.log('Export functionality not yet implemented');
-    alert('Export functionality is not yet implemented. This would combine the visible videos into a single file.');
+// This function is now handled in export.js
+function getVisibleVideos() {
+    return Object.values(videos).filter(video => video.style.display !== 'none');
 }
