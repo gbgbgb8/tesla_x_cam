@@ -1,0 +1,19 @@
+{
+    "videoLayout": {
+        "mainSize": {
+            "width": "100%",
+            "height": "100%"
+        },
+        "cornerSize": {
+            "width": "20%",
+            "height": "20%"
+        }
+    },
+    "exportSettings": {
+        "defaultFormat": "mp4",
+        "defaultQuality": "high"
+    },
+    "timeRangeSettings": {
+        "defaultRange": "24h"
+    }
+}

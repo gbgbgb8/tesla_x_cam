@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesla X Cam Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Tesla X Cam Viewer</h1>
+    </header>
+    <main>
+        <div id="video-container">
+            <video id="main-video" controls></video>
+            <video id="front-video" class="corner-video"></video>
+            <video id="back-video" class="corner-video"></video>
+            <video id="left-video" class="corner-video"></video>
+            <video id="right-video" class="corner-video"></video>
+        </div>
+        <div id="controls">
+            <input type="file" id="folder-input" webkitdirectory directory multiple>
+            <div id="time-range">
+                <input type="datetime-local" id="start-time">
+                <input type="datetime-local" id="end-time">
+            </div>
+            <button id="export-btn">Export</button>
+        </div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/0.11.6/ffmpeg.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
