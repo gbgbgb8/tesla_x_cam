@@ -1,7 +1,8 @@
 let videoFiles = [];
 let videos = [];
 let videoToggles = [];
-let primaryVideoRadios = [];
+let gridCells = [];
+let videoPositions = ['front', 'left', 'back', 'right', '', '', '', '', ''];
 
 document.addEventListener('DOMContentLoaded', () => {
     videos = [
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('toggle-right')
     ];
 
-    primaryVideoRadios = document.querySelectorAll('input[name="primary-video"]');
+    gridCells = document.querySelectorAll('.grid-cell');
 
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', exportVideo);
@@ -34,10 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
         toggle.addEventListener('change', () => toggleVideoVisibility(index + 1));
     });
 
-    // Add event listeners for primary video selection
-    primaryVideoRadios.forEach(radio => {
-        radio.addEventListener('change', handlePrimaryVideoChange);
+    // Initialize Sortable for grid
+    new Sortable(document.getElementById('video-grid'), {
+        animation: 150,
+        onEnd: handleGridChange
     });
+
+    // Initialize grid
+    updateGrid();
 });
 
 function handleFolderSelect(event) {
@@ -117,25 +122,36 @@ function toggleVideoVisibility(index) {
     video.style.pointerEvents = isVisible ? 'auto' : 'none';
 }
 
-function handlePrimaryVideoChange(event) {
-    const selectedValue = event.target.value;
-    const selectedIndex = ['front', 'back', 'left', 'right'].indexOf(selectedValue) + 1;
+function handleGridChange(evt) {
+    const oldIndex = evt.oldIndex;
+    const newIndex = evt.newIndex;
     
-    // Swap sources between main video and selected corner video
-    const tempSrc = videos[0].src;
-    videos[0].src = videos[selectedIndex].src;
-    videos[selectedIndex].src = tempSrc;
+    // Update videoPositions array
+    const [movedItem] = videoPositions.splice(oldIndex, 1);
+    videoPositions.splice(newIndex, 0, movedItem);
 
-    // Pause all videos and reset their current time
-    const currentTime = videos[0].currentTime;
-    videos.forEach(video => {
-        video.pause();
-        video.currentTime = currentTime;
+    updateGrid();
+    updateMainVideo();
+}
+
+function updateGrid() {
+    gridCells.forEach((cell, index) => {
+        const position = videoPositions[index];
+        cell.textContent = position ? position.charAt(0).toUpperCase() : '';
+        cell.style.backgroundColor = position ? '#007bff' : '#ddd';
+        cell.style.color = position ? 'white' : 'black';
     });
+}
 
-    // Play the main video if it was playing before
-    if (!videos[0].paused) {
-        videos[0].play();
+function updateMainVideo() {
+    const centerPosition = videoPositions[4];
+    if (centerPosition) {
+        const videoIndex = ['front', 'back', 'left', 'right'].indexOf(centerPosition) + 1;
+        videos[0].src = videos[videoIndex].src;
+
+        // Uncheck the toggle for the main video
+        videoToggles[videoIndex - 1].checked = false;
+        toggleVideoVisibility(videoIndex);
     }
 }
 

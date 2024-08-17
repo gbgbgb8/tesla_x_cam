@@ -11,6 +11,17 @@
         <h1>Tesla X Cam Viewer</h1>
     </header>
     <main>
+        <div id="video-grid">
+            <div class="grid-cell" data-position="0"></div>
+            <div class="grid-cell" data-position="1"></div>
+            <div class="grid-cell" data-position="2"></div>
+            <div class="grid-cell" data-position="3"></div>
+            <div class="grid-cell" data-position="4"></div>
+            <div class="grid-cell" data-position="5"></div>
+            <div class="grid-cell" data-position="6"></div>
+            <div class="grid-cell" data-position="7"></div>
+            <div class="grid-cell" data-position="8"></div>
+        </div>
         <div id="video-container">
             <video id="main-video" controls></video>
             <video id="front-video" class="corner-video"></video>
@@ -19,27 +30,33 @@
             <video id="right-video" class="corner-video"></video>
         </div>
         <div id="controls">
-            <input type="file" id="folder-input" webkitdirectory directory multiple>
-            <div id="time-range">
-                <input type="datetime-local" id="start-time">
-                <input type="datetime-local" id="end-time">
+            <div class="control-group">
+                <label for="folder-input">Select Folder:</label>
+                <input type="file" id="folder-input" webkitdirectory directory multiple>
             </div>
-            <div id="video-toggles">
-                <label><input type="checkbox" id="toggle-front" checked> Front</label>
-                <label><input type="checkbox" id="toggle-back" checked> Back</label>
-                <label><input type="checkbox" id="toggle-left" checked> Left</label>
-                <label><input type="checkbox" id="toggle-right" checked> Right</label>
+            <div class="control-group">
+                <label>Time Range:</label>
+                <div id="time-range">
+                    <input type="datetime-local" id="start-time">
+                    <input type="datetime-local" id="end-time">
+                </div>
             </div>
-            <div id="primary-video-select">
-                <label><input type="radio" name="primary-video" value="front" checked> Front</label>
-                <label><input type="radio" name="primary-video" value="back"> Back</label>
-                <label><input type="radio" name="primary-video" value="left"> Left</label>
-                <label><input type="radio" name="primary-video" value="right"> Right</label>
+            <div class="control-group">
+                <label>Video Toggles:</label>
+                <div id="video-toggles">
+                    <label><input type="checkbox" id="toggle-front" checked> Front</label>
+                    <label><input type="checkbox" id="toggle-back" checked> Back</label>
+                    <label><input type="checkbox" id="toggle-left" checked> Left</label>
+                    <label><input type="checkbox" id="toggle-right" checked> Right</label>
+                </div>
             </div>
-            <button id="export-btn">Export</button>
+            <div class="control-group">
+                <button id="export-btn">Export</button>
+            </div>
         </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/0.11.6/ffmpeg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
