@@ -1,5 +1,6 @@
 let videoFiles = [];
 let videos = [];
+let videoToggles = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     videos = [
@@ -10,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('right-video')
     ];
 
+    videoToggles = [
+        document.getElementById('toggle-front'),
+        document.getElementById('toggle-back'),
+        document.getElementById('toggle-left'),
+        document.getElementById('toggle-right')
+    ];
+
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', exportVideo);
 
@@ -17,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     videos[0].addEventListener('play', syncPlay);
     videos[0].addEventListener('pause', syncPause);
     videos[0].addEventListener('seeked', syncSeek);
+
+    // Add event listeners for video toggles
+    videoToggles.forEach((toggle, index) => {
+        toggle.addEventListener('change', () => toggleVideoVisibility(index + 1));
+    });
 });
 
 function handleFolderSelect(event) {
@@ -85,6 +98,13 @@ function syncSeek() {
             video.currentTime = time;
         }
     });
+}
+
+function toggleVideoVisibility(index) {
+    const video = videos[index];
+    const isVisible = videoToggles[index - 1].checked;
+    video.style.opacity = isVisible ? '1' : '0';
+    video.style.pointerEvents = isVisible ? 'auto' : 'none';
 }
 
 function exportVideo() {
