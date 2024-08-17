@@ -130,7 +130,7 @@ function updateVideoLayout() {
     updateVideoSources();
 }
 
-// This function is now handled in export.js
+// This function is used by export.js
 function getVisibleVideos() {
     return Object.values(videos).filter(video => video.style.display !== 'none');
 }
