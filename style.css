@@ -10,28 +10,6 @@ header {
     margin-bottom: 20px;
 }
 
-#video-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto 20px;
-}
-
-.grid-cell {
-    aspect-ratio: 1;
-    background-color: #ddd;
-    border: 2px solid #999;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: move;
-}
-
 #video-container {
     position: relative;
     width: 100%;
@@ -70,9 +48,36 @@ header {
     gap: 5px;
 }
 
-#time-range, #video-toggles {
+#time-range {
     display: flex;
     gap: 10px;
+}
+
+#video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    width: 100%;
+    max-width: 150px;
+}
+
+.grid-cell {
+    aspect-ratio: 1;
+    background-color: #ddd;
+    border: 2px solid #999;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.grid-cell.active {
+    background-color: #007bff;
+    color: white;
 }
 
 label {

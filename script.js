@@ -1,8 +1,7 @@
 let videoFiles = [];
 let videos = [];
-let videoToggles = [];
 let gridCells = [];
-let videoPositions = ['front', 'left', 'back', 'right', '', '', '', '', ''];
+let videoPositions = ['front', 'left', '', 'right', 'back'];
 
 document.addEventListener('DOMContentLoaded', () => {
     videos = [
@@ -11,13 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('back-video'),
         document.getElementById('left-video'),
         document.getElementById('right-video')
-    ];
-
-    videoToggles = [
-        document.getElementById('toggle-front'),
-        document.getElementById('toggle-back'),
-        document.getElementById('toggle-left'),
-        document.getElementById('toggle-right')
     ];
 
     gridCells = document.querySelectorAll('.grid-cell');
@@ -30,15 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     videos[0].addEventListener('pause', syncPause);
     videos[0].addEventListener('seeked', syncSeek);
 
-    // Add event listeners for video toggles
-    videoToggles.forEach((toggle, index) => {
-        toggle.addEventListener('change', () => toggleVideoVisibility(index + 1));
-    });
-
-    // Initialize Sortable for grid
-    new Sortable(document.getElementById('video-grid'), {
-        animation: 150,
-        onEnd: handleGridChange
+    // Add event listeners for grid cells
+    gridCells.forEach((cell, index) => {
+        cell.addEventListener('click', () => toggleGridCell(index));
     });
 
     // Initialize grid
@@ -115,31 +101,34 @@ function syncSeek() {
     });
 }
 
-function toggleVideoVisibility(index) {
-    const video = videos[index];
-    const isVisible = videoToggles[index - 1].checked;
-    video.style.opacity = isVisible ? '1' : '0';
-    video.style.pointerEvents = isVisible ? 'auto' : 'none';
-}
-
-function handleGridChange(evt) {
-    const oldIndex = evt.oldIndex;
-    const newIndex = evt.newIndex;
-    
-    // Update videoPositions array
-    const [movedItem] = videoPositions.splice(oldIndex, 1);
-    videoPositions.splice(newIndex, 0, movedItem);
-
+function toggleGridCell(index) {
+    const position = videoPositions[index];
+    if (position) {
+        videoPositions[index] = '';
+        toggleVideoVisibility(position, false);
+    } else {
+        const availablePosition = ['front', 'back', 'left', 'right'].find(pos => !videoPositions.includes(pos));
+        if (availablePosition) {
+            videoPositions[index] = availablePosition;
+            toggleVideoVisibility(availablePosition, true);
+        }
+    }
     updateGrid();
     updateMainVideo();
+}
+
+function toggleVideoVisibility(position, isVisible) {
+    const videoIndex = ['front', 'back', 'left', 'right'].indexOf(position) + 1;
+    const video = videos[videoIndex];
+    video.style.opacity = isVisible ? '1' : '0';
+    video.style.pointerEvents = isVisible ? 'auto' : 'none';
 }
 
 function updateGrid() {
     gridCells.forEach((cell, index) => {
         const position = videoPositions[index];
         cell.textContent = position ? position.charAt(0).toUpperCase() : '';
-        cell.style.backgroundColor = position ? '#007bff' : '#ddd';
-        cell.style.color = position ? 'white' : 'black';
+        cell.classList.toggle('active', !!position);
     });
 }
 
@@ -148,10 +137,6 @@ function updateMainVideo() {
     if (centerPosition) {
         const videoIndex = ['front', 'back', 'left', 'right'].indexOf(centerPosition) + 1;
         videos[0].src = videos[videoIndex].src;
-
-        // Uncheck the toggle for the main video
-        videoToggles[videoIndex - 1].checked = false;
-        toggleVideoVisibility(videoIndex);
     }
 }
 
