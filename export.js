@@ -49,25 +49,28 @@ async function exportVideo(format) {
 
         mediaRecorder.start();
 
-        const drawFrame = () => {
+        const layout = calculateLayout(visibleVideos.length, width, height);
+        const fps = 30;
+        const duration = Math.min(...visibleVideos.map(v => v.duration));
+        const totalFrames = Math.floor(duration * fps);
+
+        for (let frame = 0; frame < totalFrames; frame++) {
+            const time = frame / fps;
             ctx.clearRect(0, 0, width, height);
-            const layout = calculateLayout(visibleVideos.length, width, height);
-            visibleVideos.forEach((video, index) => {
-                const { x, y, w, h } = layout[index];
+            
+            for (let i = 0; i < visibleVideos.length; i++) {
+                const video = visibleVideos[i];
+                video.currentTime = time;
+                await new Promise(resolve => {
+                    video.onseeked = resolve;
+                });
+                const { x, y, w, h } = layout[i];
                 ctx.drawImage(video, x, y, w, h);
-            });
-        };
+            }
 
-        const videoPromises = visibleVideos.map(video => new Promise((resolve) => {
-            video.onended = resolve;
-            video.play();
-        }));
+            canvas.captureStream().getVideoTracks()[0].requestFrame();
+        }
 
-        const drawInterval = setInterval(drawFrame, 1000 / 30); // 30 fps
-
-        await Promise.all(videoPromises);
-
-        clearInterval(drawInterval);
         mediaRecorder.stop();
 
         console.log('Export process complete');

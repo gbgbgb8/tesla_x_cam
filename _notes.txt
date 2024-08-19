@@ -5,3 +5,64 @@ Implement the time range selector functionality to jump to specific dates and ti
 Develop the video export functionality using ffmpeg.wasm to combine multiple video sets into a single video.
 Add audio file support and microphone recording for narration.
 Implement error handling and user feedback.
+
+
+Project Name: Tesla X Cam Viewer
+Description:
+The Tesla X Cam Viewer is a web-based application designed to provide Tesla owners with an intuitive and efficient way to view and export footage from their vehicle's built-in dashcam system. This project aims to simplify the process of reviewing multi-angle dashcam footage and create shareable videos for social media platforms like X (formerly Twitter).
+Current Features:
+
+Video Loading: Users can select and load multiple MP4 files from their Tesla's USB drive directly in the browser.
+Multi-angle Display: The application supports simultaneous viewing of up to four camera angles (Front, Back, Left, Right).
+Dynamic Layout: Users can customize the layout by choosing which camera angle to display in the main view and in each corner.
+Video Synchronization: All visible video streams are synchronized for seamless playback.
+Time Range Selection: Users can navigate through the footage using a time range selector.
+Export Functionality: The application allows exporting combined video in various formats:
+
+Landscape (1280x720)
+Portrait (720x1280)
+Square (720x720)
+Original (1280x960)
+
+
+Local Processing: All video processing is done client-side in the browser, ensuring user privacy and reducing server load.
+
+Current State:
+The application is functional but in a prototype stage. It's hosted on Vercel and uses purely client-side processing. The core functionality of video playback and layout management is implemented, and the export feature uses the browser's MediaRecorder API to combine visible video streams.
+Key Components:
+
+index.html: Provides the structure of the web application.
+style.css: Defines the layout and appearance of the application.
+script.js: Handles video loading, synchronization, and layout management.
+export.js: Manages the video export process using the MediaRecorder API.
+
+Lessons Learned:
+
+Cross-Origin Limitations: Initially, we attempted to use ffmpeg.wasm for video processing, but encountered issues with cross-origin restrictions and SharedArrayBuffer availability.
+Client-Side Processing: We learned that modern browsers are capable of handling complex video operations, allowing us to shift from server-side processing to a purely client-side approach.
+MediaRecorder API: We discovered that the MediaRecorder API provides a powerful and browser-compatible way to capture and combine video streams without external libraries.
+Vercel Deployment: We gained experience in deploying and configuring a web application on Vercel, including understanding the limitations and requirements of serverless platforms.
+
+Roadmap for the Future:
+
+Performance Optimization: Improve the efficiency of video processing, especially for longer recordings or lower-end devices.
+Enhanced Time Navigation: Implement a timeline scrubber for more precise navigation through the footage.
+Audio Support: Add the ability to include audio from one of the video streams or add a separate audio track during export.
+Customizable Overlays: Allow users to add text, timestamps, or other overlays to the exported video.
+Clip Selection: Implement a feature to select specific time ranges for export rather than the entire video duration.
+Format Options: Expand export options to include different codecs and quality settings.
+Persistent Settings: Add the ability to save user preferences for layout and export settings.
+Mobile Optimization: Improve the user interface and performance for mobile devices.
+Offline Support: Implement PWA features to allow the app to function offline.
+Batch Processing: Add the ability to process multiple sets of dashcam footage in a single session.
+Integration with Tesla API: Explore the possibility of directly accessing dashcam footage from the vehicle (subject to Tesla's API capabilities).
+Community Features: Implement sharing and community features for Tesla owners to share interesting or noteworthy footage.
+
+Challenges to Address:
+
+Browser Compatibility: Ensure consistent functionality across different browsers and versions.
+Large File Handling: Optimize the application to handle very large video files or long recording sessions efficiently.
+Export Speed: Improve the speed of the export process, especially for longer videos or complex layouts.
+User Education: Provide clear instructions and possibly tutorials for users who may not be familiar with video editing concepts.
+
+This project demonstrates the potential of web technologies for complex video processing tasks and provides a valuable tool for Tesla owners. As we continue to develop and refine the Tesla X Cam Viewer, we aim to create a robust, user-friendly application that enhances the utility of Tesla's built-in dashcam system.
