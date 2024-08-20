@@ -1,8 +1,9 @@
+const { createFFmpeg, fetchFile } = FFmpeg;
 let ffmpeg;
 
 async function loadFFmpeg() {
     if (ffmpeg) return;
-    ffmpeg = await createFFmpeg({ 
+    ffmpeg = createFFmpeg({ 
         log: true,
         corePath: '/ffmpeg-core.js'
     });
@@ -43,9 +44,8 @@ async function exportVideo(format) {
         // Write input videos to FFmpeg's virtual file system
         for (let i = 0; i < visibleVideos.length; i++) {
             const video = visibleVideos[i];
-            const response = await fetch(video.src);
-            const data = await response.arrayBuffer();
-            ffmpeg.FS('writeFile', `input${i}.mp4`, new Uint8Array(data));
+            const data = await fetchFile(video.src);
+            ffmpeg.FS('writeFile', `input${i}.mp4`, data);
         }
 
         // Prepare the FFmpeg command
