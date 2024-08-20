@@ -76,29 +76,47 @@ async function exportVideo(format) {
             framerate: 30,
         });
 
+        const startTime = new Date(document.getElementById('start-time').value).getTime();
+        const endTime = new Date(document.getElementById('end-time').value).getTime();
+        const totalDuration = endTime - startTime;
+        const fps = 30;
+        const totalFrames = Math.ceil(totalDuration / 1000 * fps);
+
         let frameCounter = 0;
-        const maxFrames = 30 * 10; // 10 seconds at 30 fps
 
         function drawFrame() {
+            const currentTime = startTime + (frameCounter * 1000 / fps);
+            
             ctx.clearRect(0, 0, width, height);
             visibleVideos.forEach((video, index) => {
+                video.currentTime = (currentTime - startTime) / 1000;
                 const layout = calculateLayout(visibleVideos.length, width, height)[index];
                 ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
             });
 
-            const videoFrame = new VideoFrame(canvas, { timestamp: frameCounter * 1000000 / 30 });
+            const videoFrame = new VideoFrame(canvas, { timestamp: frameCounter * 1000000 / fps });
             videoEncoder.encode(videoFrame);
             videoFrame.close();
 
             frameCounter++;
 
-            if (frameCounter < maxFrames) {
+            if (frameCounter < totalFrames) {
                 requestAnimationFrame(drawFrame);
             } else {
                 mediaRecorder.stop();
                 videoEncoder.close();
+                console.log('Export complete');
             }
         }
+
+        // Ensure all videos are loaded and seekable
+        await Promise.all(visibleVideos.map(video => new Promise(resolve => {
+            if (video.readyState >= 2) {
+                resolve();
+            } else {
+                video.onloadeddata = resolve;
+            }
+        })));
 
         drawFrame();
 
