@@ -16,6 +16,10 @@ async function loadFFmpeg() {
         ]);
     } catch (error) {
         console.error('Failed to load FFmpeg:', error);
+        console.error('Error details:', error.message);
+        if (error.stack) {
+            console.error('Error stack:', error.stack);
+        }
         throw error;
     }
 }
