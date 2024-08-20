@@ -65,12 +65,16 @@ async function exportVideo(format) {
         mainVideo.currentTime = 0;
         await new Promise(resolve => mainVideo.onseeked = resolve);
 
-        const drawFrame = () => {
-            ctx.clearRect(0, 0, width, height);
-            visibleVideos.forEach((video, index) => {
-                const layout = calculateLayout(visibleVideos.length, width, height)[index];
-                ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
-            });
+        let lastDrawTime = 0;
+        const drawFrame = (timestamp) => {
+            if (timestamp - lastDrawTime >= 1000 / 30) { // Limit to 30 fps
+                ctx.clearRect(0, 0, width, height);
+                visibleVideos.forEach((video, index) => {
+                    const layout = calculateLayout(visibleVideos.length, width, height)[index];
+                    ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
+                });
+                lastDrawTime = timestamp;
+            }
 
             if (mainVideo.currentTime < mainVideo.duration) {
                 requestAnimationFrame(drawFrame);
@@ -80,8 +84,14 @@ async function exportVideo(format) {
             }
         };
 
-        mainVideo.play();
-        drawFrame();
+        const playPromise = mainVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                requestAnimationFrame(drawFrame);
+            }).catch(error => {
+                console.error('Playback failed:', error);
+            });
+        }
 
         // Stop recording after the total duration
         setTimeout(() => {
