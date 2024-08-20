@@ -8,6 +8,12 @@ let videoPositions = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializeVideos();
+    addEventListeners();
+    updateVideoLayout();
+});
+
+function initializeVideos() {
     videos = {
         main: document.getElementById('main-video'),
         'top-left': document.getElementById('top-left-video'),
@@ -16,27 +22,29 @@ document.addEventListener('DOMContentLoaded', () => {
         'bottom-right': document.getElementById('bottom-right-video')
     };
 
+    Object.values(videos).forEach(video => {
+        video.addEventListener('loadedmetadata', () => {
+            video.currentTime = 0;
+        });
+    });
+}
+
+function addEventListeners() {
     document.getElementById('folder-input').addEventListener('change', handleFolderSelect);
     document.getElementById('export-btn').addEventListener('click', () => {
         const format = document.getElementById('export-format').value;
         exportVideo(format);
     });
 
-    // Add event listeners for video synchronization
-    Object.values(videos).forEach(video => {
-        video.addEventListener('play', () => syncVideos('play'));
-        video.addEventListener('pause', () => syncVideos('pause'));
-        video.addEventListener('seeked', () => syncVideos('seek'));
-    });
+    const mainVideo = videos.main;
+    mainVideo.addEventListener('play', () => syncVideos('play'));
+    mainVideo.addEventListener('pause', () => syncVideos('pause'));
+    mainVideo.addEventListener('seeked', () => syncVideos('seek'));
 
-    // Add event listeners for video toggles
     document.querySelectorAll('.position-select').forEach(select => {
         select.addEventListener('change', handlePositionChange);
     });
-
-    // Initialize video positions
-    updateVideoLayout();
-});
+}
 
 function handleFolderSelect(event) {
     const files = event.target.files;
@@ -91,8 +99,8 @@ function updateTimeRange() {
 function syncVideos(action) {
     const mainVideo = videos.main;
     Object.values(videos).forEach(video => {
-        if (video !== mainVideo) {
-            if (action === 'play') video.play();
+        if (video !== mainVideo && !video.paused) {
+            if (action === 'play') video.play().catch(() => {});
             else if (action === 'pause') video.pause();
             else if (action === 'seek') video.currentTime = mainVideo.currentTime;
         }

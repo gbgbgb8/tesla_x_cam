@@ -12,24 +12,7 @@ async function exportVideo(format) {
         console.log('Starting video export process...');
         console.log(`Visible videos: ${visibleVideos.length}`);
 
-        let width, height;
-        switch (format) {
-            case 'landscape':
-                width = 1280; height = 720;
-                break;
-            case 'portrait':
-                width = 720; height = 1280;
-                break;
-            case 'square':
-                width = 720; height = 720;
-                break;
-            case 'original':
-                width = 1280; height = 960;
-                break;
-            default:
-                throw new Error('Invalid format specified');
-        }
-
+        const { width, height } = getExportDimensions(format);
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -55,64 +38,61 @@ async function exportVideo(format) {
             recordedChunks = [];
         };
 
-        const startTime = new Date(document.getElementById('start-time').value).getTime();
-        const endTime = new Date(document.getElementById('end-time').value).getTime();
-        const totalDuration = endTime - startTime;
-
-        console.log(`Export duration: ${totalDuration}ms`);
+        // Prepare videos
+        await prepareVideos(visibleVideos);
 
         mediaRecorder.start();
 
-        // Reset all videos to the start and wait for them to be ready
-        await Promise.all(visibleVideos.map(async (video) => {
-            video.currentTime = 0;
-            await new Promise(resolve => {
-                video.onseeked = resolve;
-                video.onerror = resolve; // Handle potential errors
-            });
-        }));
+        const startTime = performance.now();
+        const duration = Math.min(...visibleVideos.map(v => v.duration)) * 1000;
 
-        console.log('All videos seeked to start');
+        function drawFrame(timestamp) {
+            const elapsed = timestamp - startTime;
+            const currentTime = elapsed / 1000;
 
-        let animationFrameId;
-        const drawFrame = () => {
             ctx.clearRect(0, 0, width, height);
             visibleVideos.forEach((video, index) => {
+                video.currentTime = currentTime % video.duration;
                 const layout = calculateLayout(visibleVideos.length, width, height)[index];
                 ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
             });
 
-            if (visibleVideos[0].currentTime < visibleVideos[0].duration) {
-                animationFrameId = requestAnimationFrame(drawFrame);
+            if (elapsed < duration) {
+                requestAnimationFrame(drawFrame);
             } else {
-                console.log('Reached end of video');
-                cancelAnimationFrame(animationFrameId);
-                finishExport();
-            }
-        };
-
-        const finishExport = () => {
-            visibleVideos.forEach(video => video.pause());
-            if (mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
+                console.log('Export complete');
             }
-            console.log('Export complete');
-        };
+        }
 
-        console.log('Starting playback');
-        await Promise.all(visibleVideos.map(video => video.play().catch(e => console.error('Playback failed:', e))));
-        drawFrame();
-
-        // Use the shortest video duration as the export duration
-        const exportDuration = Math.min(...visibleVideos.map(v => v.duration)) * 1000;
-        console.log(`Export will stop after ${exportDuration}ms`);
-
-        setTimeout(finishExport, exportDuration);
+        requestAnimationFrame(drawFrame);
 
     } catch (error) {
         console.error('Export failed:', error);
         alert('Export failed. Please check the console for details.');
     }
+}
+
+function getExportDimensions(format) {
+    switch (format) {
+        case 'landscape': return { width: 1280, height: 720 };
+        case 'portrait': return { width: 720, height: 1280 };
+        case 'square': return { width: 720, height: 720 };
+        case 'original': return { width: 1280, height: 960 };
+        default: throw new Error('Invalid format specified');
+    }
+}
+
+async function prepareVideos(videos) {
+    await Promise.all(videos.map(async (video) => {
+        video.muted = true;
+        video.currentTime = 0;
+        await new Promise((resolve) => {
+            video.onseeked = resolve;
+            video.onerror = resolve;
+        });
+    }));
+    console.log('All videos prepared');
 }
 
 function getVisibleVideos() {
