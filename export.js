@@ -35,7 +35,7 @@ async function exportVideo(format) {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
 
-        const stream = canvas.captureStream();
+        const stream = canvas.captureStream(30); // 30 fps
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
         mediaRecorder.ondataavailable = (event) => {
@@ -55,70 +55,40 @@ async function exportVideo(format) {
             recordedChunks = [];
         };
 
-        mediaRecorder.start();
-
-        const videoEncoder = new VideoEncoder({
-            output: (chunk, metadata) => {
-                if (chunk.type === 'key') {
-                    console.log('Key frame');
-                }
-            },
-            error: (e) => {
-                console.error(e.message);
-            }
-        });
-
-        await videoEncoder.configure({
-            codec: 'vp09.00.10.08',
-            width: width,
-            height: height,
-            bitrate: 10_000_000, // 10 Mbps
-            framerate: 30,
-        });
-
         const startTime = new Date(document.getElementById('start-time').value).getTime();
         const endTime = new Date(document.getElementById('end-time').value).getTime();
         const totalDuration = endTime - startTime;
-        const fps = 30;
-        const totalFrames = Math.ceil(totalDuration / 1000 * fps);
 
-        let frameCounter = 0;
+        mediaRecorder.start();
 
-        function drawFrame() {
-            const currentTime = startTime + (frameCounter * 1000 / fps);
-            
+        const mainVideo = document.getElementById('main-video');
+        mainVideo.currentTime = 0;
+        await new Promise(resolve => mainVideo.onseeked = resolve);
+
+        const drawFrame = () => {
             ctx.clearRect(0, 0, width, height);
             visibleVideos.forEach((video, index) => {
-                video.currentTime = (currentTime - startTime) / 1000;
                 const layout = calculateLayout(visibleVideos.length, width, height)[index];
                 ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
             });
 
-            const videoFrame = new VideoFrame(canvas, { timestamp: frameCounter * 1000000 / fps });
-            videoEncoder.encode(videoFrame);
-            videoFrame.close();
-
-            frameCounter++;
-
-            if (frameCounter < totalFrames) {
+            if (mainVideo.currentTime < mainVideo.duration) {
                 requestAnimationFrame(drawFrame);
             } else {
                 mediaRecorder.stop();
-                videoEncoder.close();
                 console.log('Export complete');
             }
-        }
+        };
 
-        // Ensure all videos are loaded and seekable
-        await Promise.all(visibleVideos.map(video => new Promise(resolve => {
-            if (video.readyState >= 2) {
-                resolve();
-            } else {
-                video.onloadeddata = resolve;
-            }
-        })));
-
+        mainVideo.play();
         drawFrame();
+
+        // Stop recording after the total duration
+        setTimeout(() => {
+            mainVideo.pause();
+            mediaRecorder.stop();
+            console.log('Export complete');
+        }, totalDuration);
 
         console.log('Export process started. This may take a while...');
 
