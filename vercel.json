@@ -5,7 +5,7 @@
       "headers": [
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
-        { "key": "Content-Security-Policy", "value": "script-src 'self' https://unpkg.com 'unsafe-eval'; worker-src 'self' blob:; wasm-unsafe-eval 'self'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'" }
       ]
     },
     {
