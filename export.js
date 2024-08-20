@@ -2,7 +2,7 @@ let ffmpeg;
 
 async function loadFFmpeg() {
     if (ffmpeg) return;
-    ffmpeg = createFFmpeg({ log: true });
+    ffmpeg = new FFmpeg();
     await ffmpeg.load();
 }
 
