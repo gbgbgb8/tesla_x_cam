@@ -3,13 +3,21 @@ let ffmpeg;
 
 async function loadFFmpeg() {
     if (ffmpeg) return;
-    ffmpeg = createFFmpeg({ 
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-        wasmPath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.wasm',
-        workerPath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js'
-    });
-    await ffmpeg.load();
+    try {
+        ffmpeg = createFFmpeg({ 
+            log: true,
+            corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+            wasmPath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.wasm',
+            workerPath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js'
+        });
+        await Promise.race([
+            ffmpeg.load(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('FFmpeg load timeout')), 30000))
+        ]);
+    } catch (error) {
+        console.error('Failed to load FFmpeg:', error);
+        throw error;
+    }
 }
 
 async function exportVideo(format) {
