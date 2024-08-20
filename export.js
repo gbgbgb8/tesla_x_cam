@@ -2,7 +2,10 @@ let ffmpeg;
 
 async function loadFFmpeg() {
     if (ffmpeg) return;
-    ffmpeg = await createFFmpeg({ log: true });
+    ffmpeg = await createFFmpeg({ 
+        log: true,
+        corePath: '/ffmpeg-core.js'
+    });
     await ffmpeg.load();
 }
 
