@@ -8,13 +8,14 @@
       ]
     },
     {
-      "source": "/ffmpeg-core.wasm",
+      "source": "/(.*\\.wasm)",
       "headers": [
-        { "key": "Content-Type", "value": "application/wasm" }
+        { "key": "Content-Type", "value": "application/wasm" },
+        { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
       ]
     },
     {
-      "source": "/(ffmpeg\\.min\\.js|ffmpeg-core\\.js)",
+      "source": "/(.*\\.(js|css))",
       "headers": [
         { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
       ]

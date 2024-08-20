@@ -5,7 +5,7 @@ async function loadFFmpeg() {
     if (ffmpeg) return;
     ffmpeg = createFFmpeg({ 
         log: true,
-        corePath: '/ffmpeg-core.js'
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
     await ffmpeg.load();
 }
