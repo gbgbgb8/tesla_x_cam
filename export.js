@@ -2,10 +2,8 @@ let ffmpeg;
 
 async function loadFFmpeg() {
     if (ffmpeg) return;
-    ffmpeg = new FFmpeg();
-    await ffmpeg.load({
-        coreURL: '/ffmpeg-core.js'
-    });
+    ffmpeg = await createFFmpeg({ log: true });
+    await ffmpeg.load();
 }
 
 async function exportVideo(format) {
