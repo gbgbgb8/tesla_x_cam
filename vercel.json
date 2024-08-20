@@ -5,18 +5,18 @@
       "headers": [
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
-        { "key": "Content-Security-Policy", "value": "script-src 'self' https://unpkg.com; worker-src 'self' blob:;" }
+        { "key": "Content-Security-Policy", "value": "script-src 'self' https://unpkg.com 'unsafe-eval'; worker-src 'self' blob:; wasm-unsafe-eval 'self'" }
       ]
     },
     {
-      "source": "/ffmpeg-core.wasm",
+      "source": "/(.*\\.wasm)",
       "headers": [
         { "key": "Content-Type", "value": "application/wasm" },
         { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
       ]
     },
     {
-      "source": "/(ffmpeg.min.js|ffmpeg-core.js)",
+      "source": "/(ffmpeg\\.min\\.js|ffmpeg-core\\.js)",
       "headers": [
         { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
