@@ -132,5 +132,5 @@ function updateVideoLayout() {
 
 // This function is used by export.js
 function getVisibleVideos() {
-    return Object.values(videos).filter(video => video.style.display !== 'none');
+    return Object.values(videos).filter(video => video.style.display !== 'none' && video.src);
 }

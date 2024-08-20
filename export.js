@@ -7,6 +7,18 @@ async function exportVideo(format) {
         }
 
         console.log('Starting video export process...');
+        console.log(`Visible videos: ${visibleVideos.length}`);
+
+        // Ensure all videos are loaded and ready
+        await Promise.all(visibleVideos.map(video => new Promise(resolve => {
+            if (video.readyState >= 2) {
+                resolve();
+            } else {
+                video.addEventListener('loadeddata', resolve, { once: true });
+            }
+        })));
+
+        console.log('All videos are ready');
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -38,6 +50,7 @@ async function exportVideo(format) {
 
         mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
         mediaRecorder.onstop = () => {
+            console.log('MediaRecorder stopped, creating blob...');
             const blob = new Blob(chunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -45,14 +58,18 @@ async function exportVideo(format) {
             a.download = `tesla_cam_export_${format}.webm`;
             a.click();
             URL.revokeObjectURL(url);
+            console.log('Export complete, file should be downloading');
         };
 
         mediaRecorder.start();
+        console.log('MediaRecorder started');
 
         const layout = calculateLayout(visibleVideos.length, width, height);
         const fps = 30;
         const duration = Math.min(...visibleVideos.map(v => v.duration));
         const totalFrames = Math.floor(duration * fps);
+
+        console.log(`Exporting ${totalFrames} frames at ${fps} FPS`);
 
         for (let frame = 0; frame < totalFrames; frame++) {
             const time = frame / fps;
@@ -68,12 +85,15 @@ async function exportVideo(format) {
                 ctx.drawImage(video, x, y, w, h);
             }
 
-            canvas.captureStream().getVideoTracks()[0].requestFrame();
+            if (frame % 30 === 0) {
+                console.log(`Processed frame ${frame}/${totalFrames}`);
+            }
+
+            await new Promise(resolve => requestAnimationFrame(resolve));
         }
 
         mediaRecorder.stop();
-
-        console.log('Export process complete');
+        console.log('MediaRecorder stopped');
 
     } catch (error) {
         console.error('Export failed:', error);
