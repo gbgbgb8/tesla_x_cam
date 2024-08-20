@@ -59,48 +59,55 @@ async function exportVideo(format) {
         const endTime = new Date(document.getElementById('end-time').value).getTime();
         const totalDuration = endTime - startTime;
 
+        console.log(`Export duration: ${totalDuration}ms`);
+
         mediaRecorder.start();
 
-        const mainVideo = document.getElementById('main-video');
-        mainVideo.currentTime = 0;
-        await new Promise(resolve => mainVideo.onseeked = resolve);
+        // Reset all videos to the start and wait for them to be ready
+        await Promise.all(visibleVideos.map(async (video) => {
+            video.currentTime = 0;
+            await new Promise(resolve => {
+                video.onseeked = resolve;
+                video.onerror = resolve; // Handle potential errors
+            });
+        }));
 
-        let lastDrawTime = 0;
-        const drawFrame = (timestamp) => {
-            if (timestamp - lastDrawTime >= 1000 / 30) { // Limit to 30 fps
-                ctx.clearRect(0, 0, width, height);
-                visibleVideos.forEach((video, index) => {
-                    const layout = calculateLayout(visibleVideos.length, width, height)[index];
-                    ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
-                });
-                lastDrawTime = timestamp;
-            }
+        console.log('All videos seeked to start');
 
-            if (mainVideo.currentTime < mainVideo.duration) {
-                requestAnimationFrame(drawFrame);
+        let animationFrameId;
+        const drawFrame = () => {
+            ctx.clearRect(0, 0, width, height);
+            visibleVideos.forEach((video, index) => {
+                const layout = calculateLayout(visibleVideos.length, width, height)[index];
+                ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
+            });
+
+            if (visibleVideos[0].currentTime < visibleVideos[0].duration) {
+                animationFrameId = requestAnimationFrame(drawFrame);
             } else {
-                mediaRecorder.stop();
-                console.log('Export complete');
+                console.log('Reached end of video');
+                cancelAnimationFrame(animationFrameId);
+                finishExport();
             }
         };
 
-        const playPromise = mainVideo.play();
-        if (playPromise !== undefined) {
-            playPromise.then(_ => {
-                requestAnimationFrame(drawFrame);
-            }).catch(error => {
-                console.error('Playback failed:', error);
-            });
-        }
-
-        // Stop recording after the total duration
-        setTimeout(() => {
-            mainVideo.pause();
-            mediaRecorder.stop();
+        const finishExport = () => {
+            visibleVideos.forEach(video => video.pause());
+            if (mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
             console.log('Export complete');
-        }, totalDuration);
+        };
 
-        console.log('Export process started. This may take a while...');
+        console.log('Starting playback');
+        await Promise.all(visibleVideos.map(video => video.play().catch(e => console.error('Playback failed:', e))));
+        drawFrame();
+
+        // Use the shortest video duration as the export duration
+        const exportDuration = Math.min(...visibleVideos.map(v => v.duration)) * 1000;
+        console.log(`Export will stop after ${exportDuration}ms`);
+
+        setTimeout(finishExport, exportDuration);
 
     } catch (error) {
         console.error('Export failed:', error);
