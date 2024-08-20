@@ -1,3 +1,11 @@
+let ffmpeg;
+
+async function loadFFmpeg() {
+    if (ffmpeg) return;
+    ffmpeg = createFFmpeg({ log: true });
+    await ffmpeg.load();
+}
+
 async function exportVideo(format) {
     try {
         const visibleVideos = getVisibleVideos();
@@ -9,19 +17,7 @@ async function exportVideo(format) {
         console.log('Starting video export process...');
         console.log(`Visible videos: ${visibleVideos.length}`);
 
-        // Ensure all videos are loaded and ready
-        await Promise.all(visibleVideos.map(video => new Promise(resolve => {
-            if (video.readyState >= 2) {
-                resolve();
-            } else {
-                video.addEventListener('loadeddata', resolve, { once: true });
-            }
-        })));
-
-        console.log('All videos are ready');
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        await loadFFmpeg();
 
         let width, height;
         switch (format) {
@@ -41,59 +37,42 @@ async function exportVideo(format) {
                 throw new Error('Invalid format specified');
         }
 
-        canvas.width = width;
-        canvas.height = height;
-
-        const stream = canvas.captureStream();
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-        mediaRecorder.onstop = () => {
-            console.log('MediaRecorder stopped, creating blob...');
-            const blob = new Blob(chunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `tesla_cam_export_${format}.webm`;
-            a.click();
-            URL.revokeObjectURL(url);
-            console.log('Export complete, file should be downloading');
-        };
-
-        mediaRecorder.start();
-        console.log('MediaRecorder started');
-
-        const layout = calculateLayout(visibleVideos.length, width, height);
-        const fps = 30;
-        const duration = Math.min(...visibleVideos.map(v => v.duration));
-        const totalFrames = Math.floor(duration * fps);
-
-        console.log(`Exporting ${totalFrames} frames at ${fps} FPS`);
-
-        for (let frame = 0; frame < totalFrames; frame++) {
-            const time = frame / fps;
-            ctx.clearRect(0, 0, width, height);
-            
-            for (let i = 0; i < visibleVideos.length; i++) {
-                const video = visibleVideos[i];
-                video.currentTime = time;
-                await new Promise(resolve => {
-                    video.onseeked = resolve;
-                });
-                const { x, y, w, h } = layout[i];
-                ctx.drawImage(video, x, y, w, h);
-            }
-
-            if (frame % 30 === 0) {
-                console.log(`Processed frame ${frame}/${totalFrames}`);
-            }
-
-            await new Promise(resolve => requestAnimationFrame(resolve));
+        // Write input videos to FFmpeg's virtual file system
+        for (let i = 0; i < visibleVideos.length; i++) {
+            const video = visibleVideos[i];
+            const response = await fetch(video.src);
+            const data = await response.arrayBuffer();
+            ffmpeg.FS('writeFile', `input${i}.mp4`, new Uint8Array(data));
         }
 
-        mediaRecorder.stop();
-        console.log('MediaRecorder stopped');
+        // Prepare the FFmpeg command
+        const filterComplex = visibleVideos.map((_, i) => `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2[v${i}]`).join(';');
+        const overlayFilter = visibleVideos.map((_, i) => `[tmp][v${i}]overlay=shortest=1:x=${i % 2 === 1 ? 'W/2' : '0'}:y=${i >= 2 ? 'H/2' : '0'}[tmp]`).join(';');
+
+        const command = [
+            ...visibleVideos.map((_, i) => ['-i', `input${i}.mp4`]).flat(),
+            '-filter_complex',
+            `${filterComplex};${visibleVideos.map((_, i) => `[v${i}]`).join('')}xstack=inputs=${visibleVideos.length}:layout=0_0|w0_0|0_h0|w0_h0[tmp];${overlayFilter.slice(0, -5)}`,
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            'output.mp4'
+        ];
+
+        // Run FFmpeg command
+        await ffmpeg.run(...command);
+
+        // Read the output file and create a download link
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tesla_cam_export_${format}.mp4`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        console.log('Export complete, file should be downloading');
 
     } catch (error) {
         console.error('Export failed:', error);
