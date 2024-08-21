@@ -1,127 +1,117 @@
-let mediaRecorder;
-let recordedChunks = [];
+let ffmpeg = null;
+
+async function loadFFmpeg() {
+    if (!ffmpeg) {
+        ffmpeg = createFFmpeg({ log: true });
+        await ffmpeg.load();
+    }
+}
 
 async function exportVideo(format) {
     try {
+        await loadFFmpeg();
+        
         const visibleVideos = getVisibleVideos();
         if (visibleVideos.length === 0) {
-            alert('No visible videos to export.');
+            alert('No videos to export');
             return;
         }
 
-        console.log('Starting video export process...');
-        console.log(`Visible videos: ${visibleVideos.length}`);
-
-        const { width, height } = getExportDimensions(format);
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        const stream = canvas.captureStream(30); // 30 fps
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
-
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `tesla_cam_export_${format}.webm`;
-            a.click();
-            URL.revokeObjectURL(url);
-            recordedChunks = [];
-        };
-
-        // Prepare videos
-        await prepareVideos(visibleVideos);
-
-        mediaRecorder.start();
-
-        const startTime = performance.now();
-        const duration = Math.min(...visibleVideos.map(v => v.duration)) * 1000;
-
-        function drawFrame(timestamp) {
-            const elapsed = timestamp - startTime;
-            const currentTime = elapsed / 1000;
-
-            ctx.clearRect(0, 0, width, height);
-            visibleVideos.forEach((video, index) => {
-                video.currentTime = currentTime % video.duration;
-                const layout = calculateLayout(visibleVideos.length, width, height)[index];
-                ctx.drawImage(video, layout.x, layout.y, layout.w, layout.h);
-            });
-
-            if (elapsed < duration) {
-                requestAnimationFrame(drawFrame);
-            } else {
-                mediaRecorder.stop();
-                console.log('Export complete');
-            }
+        // Prepare FFmpeg command based on the selected format
+        let outputWidth, outputHeight;
+        switch (format) {
+            case 'landscape':
+                outputWidth = 1280;
+                outputHeight = 720;
+                break;
+            case 'portrait':
+                outputWidth = 720;
+                outputHeight = 1280;
+                break;
+            case 'square':
+                outputWidth = 720;
+                outputHeight = 720;
+                break;
+            case 'original':
+                // We'll use the main video's dimensions for original format
+                outputWidth = videos.main.videoWidth;
+                outputHeight = videos.main.videoHeight;
+                break;
+            default:
+                throw new Error('Invalid format');
         }
 
-        requestAnimationFrame(drawFrame);
+        // Create filter complex string based on visible videos and their positions
+        const filterComplex = createFilterComplex(visibleVideos, outputWidth, outputHeight);
+
+        // Write input files to FFmpeg's virtual file system
+        for (let i = 0; i < visibleVideos.length; i++) {
+            const videoBlob = await fetch(visibleVideos[i].src).then(r => r.blob());
+            const videoArrayBuffer = await videoBlob.arrayBuffer();
+            ffmpeg.FS('writeFile', `input${i}.mp4`, new Uint8Array(videoArrayBuffer));
+        }
+
+        // Run FFmpeg command
+        await ffmpeg.run(
+            ...visibleVideos.flatMap((_, i) => ['-i', `input${i}.mp4`]),
+            '-filter_complex', filterComplex,
+            '-c:v', 'libx264',
+            '-profile:v', 'high',
+            '-preset', 'slow',
+            '-crf', '18',
+            '-r', '30',
+            '-movflags', '+faststart',
+            '-pix_fmt', 'yuv420p',
+            'output.mp4'
+        );
+
+        // Read the output file
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+
+        // Create a download link and trigger download
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'exported_video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Clean up
+        visibleVideos.forEach((_, i) => ffmpeg.FS('unlink', `input${i}.mp4`));
+        ffmpeg.FS('unlink', 'output.mp4');
 
     } catch (error) {
         console.error('Export failed:', error);
-        alert('Export failed. Please check the console for details.');
+        alert('Export failed: ' + error.message);
     }
 }
 
-function getExportDimensions(format) {
-    switch (format) {
-        case 'landscape': return { width: 1280, height: 720 };
-        case 'portrait': return { width: 720, height: 1280 };
-        case 'square': return { width: 720, height: 720 };
-        case 'original': return { width: 1280, height: 960 };
-        default: throw new Error('Invalid format specified');
-    }
+function createFilterComplex(videos, outputWidth, outputHeight) {
+    const layouts = {
+        main: '[0:v]scale=' + outputWidth + ':' + outputHeight + '[main];',
+        'top-left': '[1:v]scale=iw/3:ih/3[tl];[main][tl]overlay=0:0[v1];',
+        'top-right': '[2:v]scale=iw/3:ih/3[tr];[v1][tr]overlay=main_w-overlay_w:0[v2];',
+        'bottom-left': '[3:v]scale=iw/3:ih/3[bl];[v2][bl]overlay=0:main_h-overlay_h[v3];',
+        'bottom-right': '[4:v]scale=iw/3:ih/3[br];[v3][br]overlay=main_w-overlay_w:main_h-overlay_h'
+    };
+
+    let filterComplex = '';
+    let lastOutput = 'main';
+
+    videos.forEach((video, index) => {
+        const position = Object.entries(videoPositions).find(([_, pos]) => pos === video.id.replace('-video', ''))[1];
+        if (position !== 'main') {
+            filterComplex += layouts[position].replace(/\[v\d\]/g, `[v${index}]`).replace(/\[v\d\]/g, `[v${index + 1}]`);
+            lastOutput = `v${index + 1}`;
+        }
+    });
+
+    return filterComplex + `[${lastOutput}]`;
 }
 
-async function prepareVideos(videos) {
-    await Promise.all(videos.map(async (video) => {
-        video.muted = true;
-        video.currentTime = 0;
-        await new Promise((resolve) => {
-            video.onseeked = resolve;
-            video.onerror = resolve;
-        });
-    }));
-    console.log('All videos prepared');
-}
-
-function getVisibleVideos() {
-    return Object.values(videos).filter(video => video.style.display !== 'none');
-}
-
-function calculateLayout(videoCount, width, height) {
-    switch (videoCount) {
-        case 1:
-            return [{ x: 0, y: 0, w: width, h: height }];
-        case 2:
-            return [
-                { x: 0, y: 0, w: width / 2, h: height },
-                { x: width / 2, y: 0, w: width / 2, h: height }
-            ];
-        case 3:
-            return [
-                { x: 0, y: 0, w: width, h: height / 2 },
-                { x: 0, y: height / 2, w: width / 2, h: height / 2 },
-                { x: width / 2, y: height / 2, w: width / 2, h: height / 2 }
-            ];
-        case 4:
-            return [
-                { x: 0, y: 0, w: width / 2, h: height / 2 },
-                { x: width / 2, y: 0, w: width / 2, h: height / 2 },
-                { x: 0, y: height / 2, w: width / 2, h: height / 2 },
-                { x: width / 2, y: height / 2, w: width / 2, h: height / 2 }
-            ];
-        default:
-            throw new Error('Unsupported number of videos');
-    }
-}
+// Make sure to include the FFmpeg library in your HTML file:
+// <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+// <script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
