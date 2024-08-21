@@ -142,3 +142,10 @@ function updateVideoLayout() {
 function getVisibleVideos() {
     return Object.values(videos).filter(video => video.style.display !== 'none' && video.src);
 }
+
+import { exportVideo } from './export.js';
+
+document.getElementById('export-btn').addEventListener('click', () => {
+    const format = document.getElementById('export-format').value;
+    exportVideo(format);
+});

@@ -2,7 +2,7 @@ let ffmpeg = null;
 
 async function loadFFmpeg() {
     if (!ffmpeg) {
-        ffmpeg = createFFmpeg({ log: true });
+        ffmpeg = FFmpeg.createFFmpeg({ log: true });
         await ffmpeg.load();
     }
 }
@@ -33,7 +33,6 @@ async function exportVideo(format) {
                 outputHeight = 720;
                 break;
             case 'original':
-                // We'll use the main video's dimensions for original format
                 outputWidth = videos.main.videoWidth;
                 outputHeight = videos.main.videoHeight;
                 break;
@@ -46,9 +45,8 @@ async function exportVideo(format) {
 
         // Write input files to FFmpeg's virtual file system
         for (let i = 0; i < visibleVideos.length; i++) {
-            const videoBlob = await fetch(visibleVideos[i].src).then(r => r.blob());
-            const videoArrayBuffer = await videoBlob.arrayBuffer();
-            ffmpeg.FS('writeFile', `input${i}.mp4`, new Uint8Array(videoArrayBuffer));
+            const videoFile = await FFmpeg.fetchFile(visibleVideos[i].src);
+            ffmpeg.FS('writeFile', `input${i}.mp4`, videoFile);
         }
 
         // Run FFmpeg command
@@ -111,7 +109,3 @@ function createFilterComplex(videos, outputWidth, outputHeight) {
 
     return filterComplex + `[${lastOutput}]`;
 }
-
-// Make sure to include the FFmpeg library in your HTML file:
-// <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-// <script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
